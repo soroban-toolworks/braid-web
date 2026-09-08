@@ -1,0 +1,21 @@
+{
+  "name": "braid-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Viewer for Braid reports \u2014 Soroban parallel-execution conflicts",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.mjs",
+    "test": "node --test test.mjs",
+    "conformance": "node conformance.mjs",
+    "verify": "node verify.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  },
+  "dependencies": {
+    "tree-sitter-wasms": "^0.1.13",
+    "web-tree-sitter": "^0.25.0"
+  }
+}
