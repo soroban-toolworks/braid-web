@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Braid — Soroban parallel-execution analyser</title>
+<meta name="description" content="Paste a Soroban contract and see which entry points cannot run in parallel under CAP-0063, and the storage key stopping them. Runs entirely in your browser.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>%F0%9F%A7%B5</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap mh">
+    <div>
+      <p class="eyebrow">CAP-0063 · parallel execution</p>
+      <h1>Braid</h1>
+      <p class="deck">Paste a Soroban contract. See which entry points cannot run at the same time, and the storage key that is stopping them.</p>
+    </div>
+    <nav class="mh-links">
+      <a href="https://github.com/deborahamoni0-prog/braid">Source</a>
+      <a href="https://github.com/stellar/stellar-protocol/blob/master/core/cap-0063.md">CAP-0063</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="workbench">
+
+    <!-- ---- editor ---- -->
+    <section class="editor-col">
+      <div class="editor-head">
+        <h2>Contract source</h2>
+        <span class="status" id="status" role="status">Loading the Rust parser…</span>
+      </div>
+
+      <div class="examples" id="examples" role="group" aria-label="Example contracts"></div>
+
+      <div class="editor-wrap">
+        <textarea id="source" spellcheck="false" autocapitalize="off" autocorrect="off"
+          aria-label="Soroban contract source" placeholder="#![no_std]&#10;use soroban_sdk::{contract, contractimpl, contracttype, Address, Env};&#10;&#10;// paste a Soroban contract here"></textarea>
+      </div>
+
+      <div class="editor-foot">
+        <label class="file-btn">
+          Open a .rs file
+          <input type="file" id="file" accept=".rs,text/plain" hidden>
+        </label>
+        <button class="btn ghost" id="download" type="button">Download report JSON</button>
+      </div>
+
+      <p class="err" id="err" hidden></p>
+    </section>
+
+    <!-- ---- report ---- -->
+    <section class="report-col">
+      <div id="report" hidden>
+        <div class="topline">
+          <p class="verdict" id="verdict"></p>
+          <dl class="stats" id="stats"></dl>
+        </div>
+
+        <section class="panel" id="graph-panel">
+          <h2 id="graph-title">Entry points that cannot run in parallel</h2>
+          <p class="muted" id="graph-note"></p>
+          <div class="graph-scroll"><svg id="graph" role="img" aria-label="Conflict graph"></svg></div>
+        </section>
+
+        <section class="panel">
+          <div class="filters-head">
+            <h2>Findings</h2>
+            <div class="chips" id="chips"></div>
+          </div>
+          <div id="findings"></div>
+          <p class="muted" id="none-shown" hidden>No findings at the selected severities.</p>
+        </section>
+      </div>
+
+      <p class="placeholder" id="placeholder">Analysis appears here as you type.</p>
+    </section>
+  </div>
+
+  <section class="explainer">
+    <h2>The four key classes</h2>
+    <div class="classes">
+      <div class="cls"><h3>static</h3><code>DataKey::Admin</code><p>One entry for every caller. A write here serialises everything that reaches it.</p></div>
+      <div class="cls ok"><h3>subject-derived</h3><code>DataKey::Balance(addr)</code><p>Different callers, different ledger entries. This is the goal state.</p></div>
+      <div class="cls bad"><h3>sequence-derived</h3><code>DataKey::Job(id)</code><p>Looks parameterised. Isn't — minting <code>id</code> read and bumped a shared counter. The trap.</p></div>
+      <div class="cls"><h3>unresolvable</h3><code>?</code><p>Braid could not follow it, so it claims nothing. Never assumed safe.</p></div>
+    </div>
+    <p class="rule">And one rule that fits no column: <strong>everything in <code>instance()</code> storage is a single ledger entry.</strong> A per-address key in instance storage is not parallel-safe, because the address never separated anything.</p>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap">
+    <p>
+      The analysis runs in this tab — your contract is never uploaded. It walks a real Rust
+      syntax tree via tree-sitter and applies the same rules as the
+      <a href="https://github.com/deborahamoni0-prog/braid">Rust CLI</a>, which is checked
+      against it on every build. Braid analyses storage-key derivation only: not security,
+      not resource cost. Reads never conflict; only a shared entry with at least one writer does.
+    </p>
+  </div>
+</footer>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>
