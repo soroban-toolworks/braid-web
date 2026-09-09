@@ -2,7 +2,7 @@
   "name": "braid-web",
   "version": "0.1.0",
   "private": true,
-  "description": "Viewer for Braid reports \u2014 Soroban parallel-execution conflicts",
+  "description": "Braid in the browser — Soroban parallel-execution analysis on a real Rust syntax tree",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {

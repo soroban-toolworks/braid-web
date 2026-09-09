@@ -1,0 +1,43 @@
+name: ci
+on:
+  push: { branches: [main] }
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - run: npm install
+      - name: unit tests
+        run: node --test test.mjs
+      - name: browser end-to-end
+        run: |
+          npx playwright install --with-deps chromium
+          node verify.mjs
+
+  # The port and the CLI are two implementations of one set of rules. Nothing
+  # keeps them honest except running both over the same fixtures and diffing
+  # the JSON, so that is a build step rather than a thing to remember.
+  conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - run: npm install
+      - name: check out the Rust CLI
+        uses: actions/checkout@v4
+        with:
+          repository: soroban-toolworks/braid
+          path: .braid-cli
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: ".braid-cli" }
+      - name: build the CLI
+        working-directory: .braid-cli
+        run: cargo build --release
+      - name: the JS port must match the Rust implementation
+        run: node conformance.mjs .braid-cli/target/release/braid
