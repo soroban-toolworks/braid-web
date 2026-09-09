@@ -1,6 +1,6 @@
 # braid-web
 
-[Braid](https://github.com/deborahamoni0-prog/braid) running in the browser. Paste a
+[Braid](https://github.com/soroban-toolworks/braid) running in the browser. Paste a
 Soroban contract and see which entry points cannot run in parallel under CAP-0063, and the
 storage key that is stopping them.
 
@@ -55,7 +55,7 @@ npm run verify       # headless browser: loads WASM, analyses, edits, downloads
 ```
 
 `npm run conformance` needs a `braid` binary — build it from the
-[analyser repo](https://github.com/deborahamoni0-prog/braid) with `cargo build --release`,
+[analyser repo](https://github.com/soroban-toolworks/braid) with `cargo build --release`,
 then pass the path as an argument if it is not at the default location.
 
 `npm run verify` needs a Chromium; set `CHROME_PATH` if Playwright's own download is

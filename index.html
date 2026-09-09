@@ -21,7 +21,7 @@
       <p class="deck">Paste a Soroban contract. See which entry points cannot run at the same time, and the storage key that is stopping them.</p>
     </div>
     <nav class="mh-links">
-      <a href="https://github.com/deborahamoni0-prog/braid">Source</a>
+      <a href="https://github.com/soroban-toolworks/braid">Source</a>
       <a href="https://github.com/stellar/stellar-protocol/blob/master/core/cap-0063.md">CAP-0063</a>
     </nav>
   </div>
@@ -100,7 +100,7 @@
     <p>
       The analysis runs in this tab — your contract is never uploaded. It walks a real Rust
       syntax tree via tree-sitter and applies the same rules as the
-      <a href="https://github.com/deborahamoni0-prog/braid">Rust CLI</a>, which is checked
+      <a href="https://github.com/soroban-toolworks/braid">Rust CLI</a>, which is checked
       against it on every build. Braid analyses storage-key derivation only: not security,
       not resource cost. Reads never conflict; only a shared entry with at least one writer does.
     </p>
