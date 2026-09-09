@@ -6,15 +6,21 @@
  */
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 
 const PORT = 8099;
 const server = spawn(process.execPath, ['server.mjs'], { env: { ...process.env, PORT }, stdio: 'ignore' });
 await new Promise(r => setTimeout(r, 600));
 
-const browser = await chromium.launch({
-  executablePath: process.env.CHROME_PATH ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
-  args: ['--no-sandbox'],
-});
+// The sandbox this was written in ships a Chromium that Playwright does not
+// know about. Point at it when it is there, and otherwise let Playwright
+// resolve its own download - hardcoding the path made this script run on
+// exactly one machine.
+const SANDBOX_CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+const executablePath = process.env.CHROME_PATH
+  ?? (existsSync(SANDBOX_CHROME) ? SANDBOX_CHROME : undefined);
+
+const browser = await chromium.launch({ executablePath, args: ['--no-sandbox'] });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 
 // Google Fonts is unreachable from some sandboxes; the fallback stacks cover it.

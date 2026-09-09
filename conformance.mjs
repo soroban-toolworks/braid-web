@@ -9,15 +9,24 @@
  */
 import { Parser, Language } from 'web-tree-sitter';
 import { readFileSync, existsSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { analyzeSource } from './analyzer.js';
 
 const BRAID = process.argv[2] ?? '/home/claude/braid/target/release/braid';
 const FIXTURES = ['hot_counter', 'instance_trap', 'global_supply', 'clean_token', 'good_registry'];
-const ROOT = '/home/claude/braid/fixtures';
+// The corpus belongs to the Rust repo, not this one. `braid` is built at
+// <repo>/target/release/braid, so its fixtures sit three levels up; that
+// resolves whether the CLI was checked out beside this repo or in CI. An
+// explicit BRAID_FIXTURES wins, for a binary installed outside its source tree.
+const ROOT = process.env.BRAID_FIXTURES ?? resolve(dirname(resolve(BRAID)), '..', '..', 'fixtures');
 
 if (!existsSync(BRAID)) {
   console.error(`braid CLI not found at ${BRAID} — build it with: cargo build --release`);
+  process.exit(2);
+}
+if (!existsSync(ROOT)) {
+  console.error(`fixture corpus not found at ${ROOT} - set BRAID_FIXTURES to the Rust repo's fixtures/`);
   process.exit(2);
 }
 
