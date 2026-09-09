@@ -36,19 +36,5 @@
         }
       ]
     }
-  ],
-  "rewrites": [
-    {
-      "source": "/vendor/tree-sitter.js",
-      "destination": "https://cdn.jsdelivr.net/npm/web-tree-sitter@0.25.0/tree-sitter.js"
-    },
-    {
-      "source": "/vendor/tree-sitter.wasm",
-      "destination": "https://cdn.jsdelivr.net/npm/web-tree-sitter@0.25.0/tree-sitter.wasm"
-    },
-    {
-      "source": "/vendor/tree-sitter-rust.wasm",
-      "destination": "https://cdn.jsdelivr.net/npm/tree-sitter-wasms@0.1.13/out/tree-sitter-rust.wasm"
-    }
   ]
 }
