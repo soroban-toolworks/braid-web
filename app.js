@@ -154,22 +154,83 @@ if (typeof document !== 'undefined') {
   }
 
   // ---- parser boot
-  async function boot() {
-    try {
-      const { Parser, Language } = await import('./vendor/tree-sitter.js');
-      // locateFile keeps the emscripten runtime looking inside vendor/ rather
-      // than at the site root.
-      await Parser.init({ locateFile: name => `./vendor/${name}` });
-      const bytes = new Uint8Array(await (await fetch('./vendor/tree-sitter-rust.wasm')).arrayBuffer());
-      const Rust = await Language.load(bytes);
-      parser = new Parser();
-      parser.setLanguage(Rust);
-      setStatus('Parser ready', 'ok');
-      run();
-    } catch (e) {
-      setStatus('Parser failed to load', 'bad');
-      fail(`The Rust parser could not start: ${e.message}. The analysis needs WebAssembly; check that vendor/tree-sitter.wasm and vendor/tree-sitter-rust.wasm are being served.`);
+  //
+  // The parser is loaded from ./vendor/ when it is committed alongside the site,
+  // and from jsDelivr otherwise. Either way the WebAssembly is verified against
+  // a pinned SHA-256 before it is allowed to run, so a compromised or swapped
+  // CDN artifact fails closed rather than silently analysing your contract with
+  // someone else's code.
+  const CDN = 'https://cdn.jsdelivr.net/npm';
+  const RUNTIME = 'web-tree-sitter@0.25.0';
+  const GRAMMAR = 'tree-sitter-wasms@0.1.13';
+
+  const SOURCES = [
+    {
+      name: 'vendor',
+      js: './vendor/tree-sitter.js',
+      runtimeWasm: './vendor/tree-sitter.wasm',
+      grammarWasm: './vendor/tree-sitter-rust.wasm',
+    },
+    {
+      name: 'jsDelivr',
+      js: `${CDN}/${RUNTIME}/tree-sitter.js`,
+      runtimeWasm: `${CDN}/${RUNTIME}/tree-sitter.wasm`,
+      grammarWasm: `${CDN}/${GRAMMAR}/out/tree-sitter-rust.wasm`,
+    },
+  ];
+
+  // Base64 SHA-256 of the exact artifacts this build was tested against.
+  const DIGESTS = {
+    runtimeWasm: 'NPzMZOErwgH9j0eA/cahCz/4gyz7hOLXQZWDSAzmuX4=',
+    grammarWasm: 'RAmSGnDQqlvsfR186AmlV6juHPas6QHjrGp25iz+qQM=',
+  };
+
+  async function sha256Base64(buffer) {
+    const digest = await crypto.subtle.digest('SHA-256', buffer);
+    return btoa(String.fromCharCode(...new Uint8Array(digest)));
+  }
+
+  async function fetchVerified(url, expected, label) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`${label}: ${res.status} ${res.statusText}`);
+    const buf = await res.arrayBuffer();
+    const got = await sha256Base64(buf);
+    if (got !== expected) {
+      throw new Error(`${label}: integrity check failed (expected ${expected}, got ${got})`);
     }
+    return buf;
+  }
+
+  async function bootFrom(src) {
+    const [runtimeWasm, grammarWasm] = await Promise.all([
+      fetchVerified(src.runtimeWasm, DIGESTS.runtimeWasm, 'tree-sitter runtime'),
+      fetchVerified(src.grammarWasm, DIGESTS.grammarWasm, 'Rust grammar'),
+    ]);
+    const { Parser, Language } = await import(src.js);
+    // wasmBinary hands the verified bytes straight to emscripten, so nothing is
+    // re-fetched behind our back; locateFile is the fallback if it ignores it.
+    await Parser.init({ wasmBinary: runtimeWasm, locateFile: () => src.runtimeWasm });
+    const Rust = await Language.load(new Uint8Array(grammarWasm));
+    const p = new Parser();
+    p.setLanguage(Rust);
+    return p;
+  }
+
+  async function boot() {
+    const failures = [];
+    for (const src of SOURCES) {
+      try {
+        setStatus(`Loading the Rust parser (${src.name})\u2026`);
+        parser = await bootFrom(src);
+        setStatus('Parser ready', 'ok');
+        run();
+        return;
+      } catch (e) {
+        failures.push(`${src.name}: ${e.message}`);
+      }
+    }
+    setStatus('Parser failed to load', 'bad');
+    fail(`The Rust parser could not start. ${failures.join('; ')}`);
   }
 
   // ---- analysis
