@@ -124,10 +124,17 @@ await check('download emits a valid report', async () => {
   return parsed.schema_version === 1 && parsed.findings.length > 0
     && `${download.suggestedFilename()}, ${parsed.findings.length} findings`; });
 
-await page.screenshot({ path: '/mnt/user-data/outputs/braid-web.png' });
-await page.setViewportSize({ width: 430, height: 900 });
-await page.waitForTimeout(400);
-await page.screenshot({ path: '/mnt/user-data/outputs/braid-web-mobile.png' });
+// Desktop and mobile stills, for looking at the layout by hand. Opt-in: a
+// CI runner has nowhere to put them and should not fail the whole check
+// because a screenshot could not be written.
+const shots = process.env.BRAID_SHOTS;
+if (shots) {
+  await page.screenshot({ path: `${shots}/braid-web.png` });
+  await page.setViewportSize({ width: 430, height: 900 });
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: `${shots}/braid-web-mobile.png` });
+  console.log(`\nScreenshots written to ${shots}`);
+}
 
 console.log(errors.length ? '\nCONSOLE ERRORS:\n' + errors.join('\n') : '\nNo console errors.');
 await browser.close();
